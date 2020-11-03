@@ -1,0 +1,41 @@
+description: '## Account Expiration'
+schemaVersion: '0.3'
+assumeRole: 'arn:aws:iam::079697969914:role/AmazonSSMRoleForAutomationAssumeQuickSetup'
+parameters:
+  InstanceId:
+    type: String
+    description: (Required) ID of your EC2 Windows managed instance.
+  Username:
+    type: String
+    description: Type the username to action on
+  Date:
+    type: String
+    description: Enter the expiration date for the account
+mainSteps:
+  - name: getInstanceDetails
+    action: aws:executeAwsApi
+    onFailure: Abort
+    inputs:
+      Service: ec2
+      Api: DescribeInstances
+      InstanceIds:
+        - '{{ InstanceId }}'
+  - name: expireaccount
+    action: aws:runCommand
+    onFailure: Abort
+    inputs:
+      DocumentName: AWS-RunPowerShellScript
+      InstanceIds:
+        - '{{ InstanceId }}'
+      Parameters:
+        commands:
+          - "try {"
+          - "  Set-ADAccountExpiration -Identity {{Username}} -DateTime '{{Date}}'"
+          - ""
+          - ""
+          - "    }"
+          - "catch {"
+          - "    Write-Host $_.Exception.Message"
+          - "    exit 255"
+          - "}"                  
+    isCritical: 'false'
